@@ -1,21 +1,23 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var cors = require('cors');
-var helmet = require('helmet');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const cors = require('cors');
+const helmet = require('helmet');
 require('dotenv').config();
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const app = express();
 
-var app = express();
+/* ===============================
+   DATABASE CONNECT
+================================ */
+require('../db');   // 👈 FIXED PATH
 
 /* ===============================
    VIEW ENGINE SETUP
 ================================ */
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '../views')); // 👈 FIXED
 app.set('view engine', 'ejs');
 
 /* ===============================
@@ -27,24 +29,24 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(cors());
 app.use(helmet());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public'))); // 👈 FIXED
 
 /* ===============================
-   HOME ROUTE (FIXES 404)
+   HOME ROUTE (TEST)
 ================================ */
 app.get('/', (req, res) => {
-  res.send('Quiz Backend API is running 🚀');
+  res.json({ status: 'Quiz Backend API running 🚀' });
 });
 
 /* ===============================
-   ROUTES
+   ROUTES (FIXED PATHS)
 ================================ */
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/api/auth', require('./routes/api/auth'));
-app.use('/api/quizzes', require('./routes/api/quizzes'));
-app.use('/api', require('./routes/api/questions'));
-app.use('/api', require('./routes/api/attempts'));
+app.use('/', require('../routes/index'));
+app.use('/users', require('../routes/users'));
+app.use('/api/auth', require('../routes/api/auth'));
+app.use('/api/quizzes', require('../routes/api/quizzes'));
+app.use('/api', require('../routes/api/questions'));
+app.use('/api', require('../routes/api/attempts'));
 
 /* ===============================
    404 HANDLER
@@ -59,19 +61,16 @@ app.use(function (req, res, next) {
 app.use(function (err, req, res, next) {
   const status = err.status || 500;
 
-  // API errors return JSON
-  if (req.originalUrl && req.originalUrl.startsWith('/api')) {
+  if (req.originalUrl.startsWith('/api')) {
     return res.status(status).json({
-      message: err.message || 'Internal Server Error'
+      error: err.message || 'Internal Server Error'
     });
   }
 
-  // Non-API errors render page
-  res.status(status);
-  res.render('error');
+  res.status(status).json({ error: err.message });
 });
 
 /* ===============================
-   EXPORT FOR VERCEL
+   EXPORT (NO LISTEN!)
 ================================ */
 module.exports = app;
