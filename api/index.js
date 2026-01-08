@@ -12,7 +12,25 @@ const app = express();
 /* ===============================
    DATABASE CONNECT
 ================================ */
-require('../db');   // 👈 FIXED PATH
+const { connectToDatabase } = require('../db');
+
+// Initialize database connection for serverless functions
+// This ensures the connection is established before handling requests
+let dbInitialized = false;
+const initDb = async () => {
+  if (!dbInitialized) {
+    try {
+      await connectToDatabase();
+      dbInitialized = true;
+    } catch (error) {
+      console.error('Database connection error:', error);
+      throw error;
+    }
+  }
+};
+
+// Initialize DB on module load (for serverless warm starts)
+initDb().catch(console.error);
 
 /* ===============================
    VIEW ENGINE SETUP
@@ -30,6 +48,20 @@ app.use(cookieParser());
 app.use(cors());
 app.use(helmet());
 app.use(express.static(path.join(__dirname, '../public'))); // 👈 FIXED
+
+/* ===============================
+   DATABASE MIDDLEWARE
+   Ensure DB is connected before handling requests
+================================ */
+app.use(async (req, res, next) => {
+  try {
+    await initDb();
+    next();
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+    res.status(500).json({ error: 'Database connection failed' });
+  }
+});
 
 /* ===============================
    HOME ROUTE (TEST)
