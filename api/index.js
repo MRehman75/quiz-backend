@@ -71,6 +71,6 @@ app.use(function (err, req, res, next) {
 });
 
 /* ===============================
-   EXPORT (NO LISTEN!)
+   EXPORT FOR VERCEL SERVERLESS
 ================================ */
 module.exports = app;
